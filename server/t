@@ -1,0 +1,3 @@
+MONGO_URI=mongodb+srv://social-feed-app:ZcbS1uh0xrU6Ls83@saikat.r5nuz5u.mongodb.net/test?retryWrites=true&w=majority&appName=Saikat
+JWT_SECRET=your_super_secret_key_here
+CLIENT_URL=http://localhost:5173
