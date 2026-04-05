@@ -1,10 +1,11 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { fetchCurrentUser } from "../services/api";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser]   = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const saveSession = (token, user) => {
     localStorage.setItem("token", token);
-    setCurrentUser(user);
+    setCurrentUser(user); 
   };
 
   const clearSession = () => {

@@ -97,3 +97,11 @@ export const toggleReplyLike = (postId, commentId, replyId) =>
     method: "PATCH",
     headers: getAuthHeaders(),
   }).then(handleResponse);
+
+
+  export const googleAuth = (payload) =>
+  fetch(`${BASE_URL}/auth/google`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  }).then(handleResponse);

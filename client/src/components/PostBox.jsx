@@ -1,3 +1,4 @@
+// src/components/PostBox.jsx
 import React, { useState, useRef } from "react";
 import { 
   FiImage, 
@@ -6,23 +7,37 @@ import {
   FiFileText, 
   FiSend, 
   FiEdit2, 
-  FiX 
+  FiX,
+  FiGlobe,
+  FiLock,
+  FiChevronDown,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../services/api";
 
+const SERVER_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+
 const getAvatarUrl = (user) =>
   user?.avatar
-    ? `http://localhost:5000${user.avatar}`
+    ? `${SERVER_URL}${user.avatar}`
     : `https://api.dicebear.com/7.x/initials/svg?seed=${user?.firstName}+${user?.lastName}`;
+
+const VISIBILITY_OPTIONS = [
+  { value: "public",  label: "Public",  icon: FiGlobe, color: "text-green-600" },
+  { value: "private", label: "Private", icon: FiLock,  color: "text-orange-500" },
+];
 
 const PostBox = ({ onPostCreated }) => {
   const { currentUser } = useAuth();
-  const [postText, setPostText] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [postText, setPostText]             = useState("");
+  const [selectedImage, setSelectedImage]   = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef(null);
+  const [visibility, setVisibility]         = useState("public");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting]     = useState(false);
+  const fileInputRef                        = useRef(null);
+
+  const activeOption = VISIBILITY_OPTIONS.find((o) => o.value === visibility);
 
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
@@ -43,7 +58,7 @@ const PostBox = ({ onPostCreated }) => {
     try {
       const formData = new FormData();
       formData.append("text", postText);
-      formData.append("visibility", "public");
+      formData.append("visibility", visibility);
       if (selectedImage) formData.append("image", selectedImage);
 
       const res = await createPost(formData);
@@ -51,6 +66,7 @@ const PostBox = ({ onPostCreated }) => {
       setPostText("");
       setSelectedImage(null);
       setImagePreviewUrl("");
+      setVisibility("public");
     } catch (err) {
       console.error("Post creation failed:", err.message);
     } finally {
@@ -65,22 +81,15 @@ const PostBox = ({ onPostCreated }) => {
       
       {/* Top Section */}
       <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-        
-        {/* Avatar */}
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0">
-          <img 
-            src={getAvatarUrl(currentUser)} 
-            alt="user" 
-            className="w-full h-full object-cover" 
-          />
+          <img src={getAvatarUrl(currentUser)} alt="user" className="w-full h-full object-cover" />
         </div>
-
-        {/* Input */}
         <div className="flex-1 flex items-center relative">
           <input
             type="text"
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmit()}
             placeholder="Write something ..."
             className="w-full bg-transparent border-none text-[14px] sm:text-[16px] md:text-[18px] text-gray-600 outline-none placeholder:text-gray-400"
           />
@@ -91,15 +100,8 @@ const PostBox = ({ onPostCreated }) => {
       {/* Image Preview */}
       {imagePreviewUrl && (
         <div className="mt-4 relative inline-block sm:ml-14">
-          <img 
-            src={imagePreviewUrl} 
-            alt="preview" 
-            className="max-h-48 sm:max-h-60 rounded-lg shadow-sm w-full sm:w-auto" 
-          />
-          <button
-            onClick={handleRemoveImage}
-            className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 hover:bg-black"
-          >
+          <img src={imagePreviewUrl} alt="preview" className="max-h-48 sm:max-h-60 rounded-lg shadow-sm w-full sm:w-auto" />
+          <button onClick={handleRemoveImage} className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 hover:bg-black">
             <FiX size={14} />
           </button>
         </div>
@@ -110,21 +112,11 @@ const PostBox = ({ onPostCreated }) => {
         
         {/* Actions Left */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-          
-          <button 
-            onClick={() => fileInputRef.current.click()}
-            className="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors"
-          >
+          <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors">
             <FiImage size={20} />
             <span className="text-sm sm:text-base font-medium">Photo</span>
           </button>
-          <input 
-            ref={fileInputRef} 
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            onChange={handleImageSelect} 
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
           <button className="flex items-center gap-2 text-gray-500 hover:text-blue-600">
             <FiVideo size={20} />
@@ -142,25 +134,68 @@ const PostBox = ({ onPostCreated }) => {
           </button>
         </div>
 
-        {/* Post Button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!canPost}
-          className={`flex items-center justify-center gap-2 w-full lg:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${
-            canPost
-              ? "bg-[#1B94FF] text-white hover:bg-blue-600 shadow-md"
-              : "bg-blue-300 text-white cursor-not-allowed"
-          }`}
-        >
-          {isSubmitting ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <FiSend size={16} />
-              <span>Post</span>
-            </>
-          )}
-        </button>
+        {/* Right: Visibility + Post Button */}
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+
+          {/* Visibility Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
+                visibility === "public"
+                  ? "border-green-200 bg-green-50 text-green-600 hover:bg-green-100"
+                  : "border-orange-200 bg-orange-50 text-orange-500 hover:bg-orange-100"
+              }`}
+            >
+              <activeOption.icon size={15} />
+              <span>{activeOption.label}</span>
+              <FiChevronDown
+                size={13}
+                className={`transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute bottom-full mb-2 left-0 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-20 min-w-[130px]">
+                {VISIBILITY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => { setVisibility(option.value); setIsDropdownOpen(false); }}
+                    className={`flex items-center gap-2 w-full px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-gray-50 ${
+                      visibility === option.value ? option.color : "text-gray-600"
+                    }`}
+                  >
+                    <option.icon size={15} />
+                    {option.label}
+                    {visibility === option.value && (
+                      <span className="ml-auto text-xs">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Post Button */}
+          <button
+            onClick={handleSubmit}
+            disabled={!canPost}
+            className={`flex items-center justify-center gap-2 flex-1 lg:flex-none px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${
+              canPost
+                ? "bg-[#1B94FF] text-white hover:bg-blue-600 shadow-md"
+                : "bg-blue-300 text-white cursor-not-allowed"
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <FiSend size={16} />
+                <span>Post</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

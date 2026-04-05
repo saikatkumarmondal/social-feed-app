@@ -54,4 +54,30 @@ const getMe = async (req, res) => {
   return sendSuccess(res, 200, { user: req.user.toPublicJSON() });
 };
 
-module.exports = { register, login, getMe };
+const googleAuth = async (req, res) => {
+  try {
+    const { firstName, lastName, email, googleId } = req.body;
+
+    if (!email || !googleId) return sendError(res, 400, "Invalid Google credentials");
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      
+      user = new User({
+        firstName,
+        lastName,
+        email,
+        password: googleId, 
+      });
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+    return sendSuccess(res, 200, { token, user: user.toPublicJSON() }, "Google login successful");
+  } catch (err) {
+    return sendError(res, 500, err.message);
+  }
+};
+
+module.exports = { register, login, getMe, googleAuth };

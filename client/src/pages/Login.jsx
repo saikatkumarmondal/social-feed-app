@@ -1,32 +1,57 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-// Asset Imports
 import shape1 from '../assets/images/shape1.svg';
 import shape2 from '../assets/images/shape2.svg';
 import shape3 from '../assets/images/shape3.svg';
 import loginImg from '../assets/images/login.png';
 import logo from '../assets/images/logo.svg';
 
-// Icons
 import { HiOutlineMail, HiOutlineLockClosed, HiArrowRight } from 'react-icons/hi';
 import { FcGoogle } from 'react-icons/fc';
 
 import { useAuth } from '../context/AuthContext';
-import { loginUser } from '../services/api';
-
-// ✅ Firebase
-import { signInWithPopup } from "firebase/auth";
+import { loginUser, googleAuth } from '../services/api';
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, provider } from "../firebase";
 
 const Login = () => {
   const navigate = useNavigate();
   const { saveSession } = useAuth();
 
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData]               = useState({ email: '', password: '' });
+  const [errorMessage, setErrorMessage]       = useState('');
+  const [isSubmitting, setIsSubmitting]       = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // ── Handle redirect result after Google redirects back ───────────────────
+  useEffect(() => {
+    const processRedirectResult = async () => {
+      setIsGoogleLoading(true);
+      try {
+        const result = await getRedirectResult(auth);
+        if (!result) return; // normal page load, no redirect happened
+
+        const { user } = result;
+        const res = await googleAuth({
+          firstName: user.displayName?.split(" ")[0] || "User",
+          lastName:  user.displayName?.split(" ").slice(1).join(" ") || "",
+          email:     user.email,
+          googleId:  user.uid,
+        });
+
+        saveSession(res.data.token, res.data.user);
+        navigate('/');
+      } catch (err) {
+        setErrorMessage(err.message);
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    };
+
+    processRedirectResult();
+  }, []);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -42,34 +67,31 @@ const Login = () => {
       saveSession(res.data.token, res.data.user);
       navigate('/');
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message);
+      setErrorMessage(err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ✅ Google Login Handler
   const handleGoogleLogin = async () => {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // 🔥 Backend payload
-      const payload = {
-        email: user.email,
-        password: user.uid, // temp হিসেবে
-      };
-
-      const res = await loginUser(payload);
-
-      saveSession(res.data.token, res.data.user);
-      navigate('/');
-
-    } catch (error) {
-      console.error(error);
-      setErrorMessage(error.message);
+      await signInWithRedirect(auth, provider);
+    } catch (err) {
+      setErrorMessage(err.message);
     }
   };
+
+  // ── Google loading screen ─────────────────────────────────────────────────
+  if (isGoogleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 font-medium">Signing in with Google...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-[#F8FAFC] flex items-center justify-center py-12 px-4">
@@ -109,7 +131,7 @@ const Login = () => {
               <h2 className="text-3xl font-black text-slate-900 leading-tight">Login to your account</h2>
             </div>
 
-            {/* ✅ Google Sign-In */}
+            {/* Google Sign-In */}
             <button 
               onClick={handleGoogleLogin}
               className="group w-full flex items-center justify-center gap-3 py-4 px-6 border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98] mb-8"
@@ -192,7 +214,6 @@ const Login = () => {
                 </Link>
               </p>
             </div>
-
           </div>
         </div>
       </div>

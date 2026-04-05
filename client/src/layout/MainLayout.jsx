@@ -6,7 +6,7 @@ const MainLayout = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FB]"> {/* Softened background color */}
       <Navbar />
-      <div className="pt-20"> {/* Offset for the fixed Navbar */}
+      <div className="pt-5"> 
         <Outlet />
       </div>
     </div>

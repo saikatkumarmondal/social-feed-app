@@ -1,21 +1,20 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signInWithPopup } from "firebase/auth";
-import { auth, provider } from "../firebase";
-// Import Assets
+// src/pages/Register.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+
 import shape1 from '../assets/images/shape1.svg';
 import shape2 from '../assets/images/shape2.svg';
 import shape3 from '../assets/images/shape3.svg';
 import registrationImg from '../assets/images/registration.png';
 import logo from '../assets/images/logo.svg';
 
-// Icons
 import { HiOutlineMail, HiOutlineLockClosed, HiArrowRight } from 'react-icons/hi';
 import { FcGoogle } from 'react-icons/fc';
 
-// Backend
 import { useAuth } from "../context/AuthContext";
-import { registerUser } from "../services/api";
+import { registerUser, googleAuth } from "../services/api";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { auth, provider } from "../firebase";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -28,59 +27,77 @@ const Register = () => {
     password: "",
   });
 
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage]       = useState("");
+  const [isSubmitting, setIsSubmitting]       = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // ── Handle redirect result after Google redirects back ───────────────────
+  useEffect(() => {
+    const processRedirectResult = async () => {
+      setIsGoogleLoading(true);
+      try {
+        const result = await getRedirectResult(auth);
+        if (!result) return; // normal page load
+
+        const { user } = result;
+        const res = await googleAuth({
+          firstName: user.displayName?.split(" ")[0] || "User",
+          lastName:  user.displayName?.split(" ").slice(1).join(" ") || "",
+          email:     user.email,
+          googleId:  user.uid,
+        });
+
+        saveSession(res.data.token, res.data.user);
+        navigate("/");
+      } catch (err) {
+        setErrorMessage(err.message);
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    };
+
+    processRedirectResult();
+  }, []);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrorMessage("");
   };
 
   const handleGoogleLogin = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-
-    const user = result.user;
-
-    console.log("Google User:", user);
-
-    // 🔥 backend এ পাঠাও (recommended)
-    const payload = {
-      firstName: user.displayName?.split(" ")[0] || "User",
-      lastName: user.displayName?.split(" ")[1] || "Name",
-      email: user.email,
-      password: user.uid, // temporary password
-    };
-
-    const res = await registerUser(payload);
-
-    saveSession(res.data.token, res.data.user);
-    navigate("/");
-
-  } catch (error) {
-    console.error("Google Login Error:", error);
-    setErrorMessage(error.message);
-  }
-};
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (err) {
+      setErrorMessage(err.message);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
-
     try {
       const res = await registerUser(formData);
       saveSession(res.data.token, res.data.user);
       navigate("/");
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || "Registration failed");
+      setErrorMessage(err.message || "Registration failed");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // ── Google loading screen ─────────────────────────────────────────────────
+  if (isGoogleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 font-medium">Signing in with Google...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-[#F8FAFC] flex items-center justify-center py-12 px-4">
@@ -121,13 +138,13 @@ const Register = () => {
             </div>
 
             {/* Google */}
-                    <button 
-          onClick={handleGoogleLogin}
-          className="group w-full flex items-center justify-center gap-3 py-4 px-6 border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98] mb-8"
-        >
-          <FcGoogle size={24} />
-          <span>Register with Google</span>
-        </button>
+            <button 
+              onClick={handleGoogleLogin}
+              className="group w-full flex items-center justify-center gap-3 py-4 px-6 border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98] mb-8"
+            >
+              <FcGoogle size={24} />
+              <span>Register with Google</span>
+            </button>
 
             <div className="relative mb-8 text-center">
               <div className="absolute inset-0 flex items-center">
@@ -146,64 +163,44 @@ const Register = () => {
             {/* Form */}
             <form className="space-y-6" onSubmit={handleSubmit}>
               
-              {/* First + Last Name */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">First Name</label>
                   <input 
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="John"
-                    required
+                    type="text" name="firstName" value={formData.firstName}
+                    onChange={handleChange} placeholder="John" required
                     className="w-full px-4 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-900"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">Last Name</label>
                   <input 
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Doe"
-                    required
+                    type="text" name="lastName" value={formData.lastName}
+                    onChange={handleChange} placeholder="Doe" required
                     className="w-full px-4 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-900"
                   />
                 </div>
               </div>
 
-              {/* Email */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
                 <div className="relative">
                   <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input 
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="name@company.com"
-                    required
+                    type="email" name="email" value={formData.email}
+                    onChange={handleChange} placeholder="name@company.com" required
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-900"
                   />
                 </div>
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 ml-1">Password</label>
                 <div className="relative">
                   <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input 
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
+                    type="password" name="password" value={formData.password}
+                    onChange={handleChange} placeholder="••••••••" required
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-900"
                   />
                 </div>
@@ -222,13 +219,14 @@ const Register = () => {
                 </span>
               </label>
 
-              {/* Submit */}
               <button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full group py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-xl shadow-blue-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="w-full group py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-xl shadow-blue-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Processing..." : (
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
                   <>
                     Register Now
                     <HiArrowRight className="group-hover:translate-x-1 transition-transform" />
@@ -239,7 +237,7 @@ const Register = () => {
 
             <p className="mt-10 text-center text-sm font-medium text-slate-500">
               Already have an account?{' '}
-              <a href="/login" className="text-blue-600 font-extrabold hover:underline">Log in</a>
+              <Link to="/login" className="text-blue-600 font-extrabold hover:underline">Log in</Link>
             </p>
           </div>
         </div>
