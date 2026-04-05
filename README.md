@@ -8,7 +8,7 @@ A full-stack social media feed application where users can register, log in, cre
 
 - **Live:** https://social-feed-app-five.vercel.app
   
-- **Video Walkthrough:** [[Video Link](https://www.youtube.com/watch?v=jqRQWCdy26Y)](https://www.youtube.com/watch?v=jqRQWCdy26Y)
+- **Video Walkthrough:** [Video Link](https://www.youtube.com/watch?v=jqRQWCdy26Y)
 
 ---
 
