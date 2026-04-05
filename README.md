@@ -209,12 +209,13 @@ Post deletion is optimistic on the frontend — the post is removed from state i
 
 ---
 
-## Screenshots
 
-> Add screenshots here after deployment
 
 ---
 
 ## Author
+Saikat Kumar Mondal
+mondalsaikatkumar@gmail.com
++8801954355330
 
-Built as part of a job selection task demonstrating full-stack development with React, Node.js, Express, and MongoDB.
+.
