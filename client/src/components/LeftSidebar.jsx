@@ -20,51 +20,37 @@ const LeftSidebar = () => {
   ];
 
   return (
-    <div className="hidden lg:block lg:w-[320px] flex-shrink-0">
-      {/* ml-6: Adds margin to the left 
-          flex flex-col items-center: Centers the children (cards) horizontally
-      */}
-      <div className="sticky top-20 space-y-4 ml-6 flex flex-col items-center pr-2">
+<div className="hidden lg:block lg:w-[320px] flex-shrink-0 -ml-18">
+  <div className="sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto space-y-4 ml-10 flex flex-col items-center pr-2">
 
-        {/* Explore Section - Made width 100% to match other cards */}
-        <div className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <h4 className="text-base font-bold mb-3 text-gray-900">
-            Explore
-          </h4>
-
-          <ul className="space-y-2">
-            {exploreLinks.map((link) => (
-              <li
-                key={link.name}
-                className="flex items-center justify-between group cursor-pointer py-0.5"
-              >
-                <a
-                  href="#0"
-                  className="flex items-center gap-3 text-gray-500 group-hover:text-blue-600 transition-colors"
-                >
-                  <div className="text-gray-400 group-hover:text-blue-500">
-                    {link.icon}
-                  </div>
-                  <span className="text-[13px] font-semibold text-gray-600 group-hover:text-gray-900">
-                    {link.name}
-                  </span>
-                </a>
-
-                {link.isNew && (
-                  <span className="text-[9px] font-bold bg-[#10d38d] text-white px-1.5 py-0.5 rounded">
-                    New
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* These will now be centered because of 'items-center' on the parent div */}
-        <SuggestedPeople />
-        <EventsCard />
-      </div>
+    {/* Explore Section */}
+    <div className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+      <h4 className="text-base font-bold mb-3 text-gray-900">Explore</h4>
+      <ul className="space-y-2">
+        {exploreLinks.map((link) => (
+          <li key={link.name} className="flex items-center justify-between group cursor-pointer py-0.5">
+            <a href="#0" className="flex items-center gap-3 text-gray-500 group-hover:text-blue-600">
+              <div className="text-gray-400 group-hover:text-blue-500">{link.icon}</div>
+              <span className="text-[13px] font-semibold text-gray-600 group-hover:text-gray-900">
+                {link.name}
+              </span>
+            </a>
+            {link.isNew && (
+              <span className="text-[9px] font-bold bg-[#10d38d] text-white px-1.5 py-0.5 rounded">
+                New
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
+
+    <div className='px-10'>
+      <SuggestedPeople />
+    <EventsCard />
+    </div>
+  </div>
+</div>
   );
 };
 

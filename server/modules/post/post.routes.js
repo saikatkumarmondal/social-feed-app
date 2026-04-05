@@ -32,3 +32,5 @@ router.patch("/:postId/like",      authenticate, togglePostLike);
 router.delete("/:postId",          authenticate, deletePost);
 
 module.exports = router;
+
+///http://localhost:5000/api/posts/69d0b713914c278dfab9889a/comments/69d0b92e914c278dfab9889bntId/replies/69d0b2c5914c278dfab98898/like
