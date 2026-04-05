@@ -8,7 +8,7 @@ A full-stack social media feed application where users can register, log in, cre
 
 - **Frontend:** coming soon
 - **Backend API:** coming soon
-- **Video Walkthrough:** coming soon
+- **Video Walkthrough:** [[coming soon](https://www.youtube.com/watch?v=jqRQWCdy26Y)](https://www.youtube.com/watch?v=jqRQWCdy26Y)
 
 ---
 
